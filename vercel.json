@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/kyb_mcp/http.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{tests/**,docs/**,.github/**,compose.yaml,Dockerfile}"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+[project]
+name = "kyb-mcp"
+version = "0.1.0"
+description = "KYB workbench MCP server: French company lookups (recherche-entreprises.api.gouv.fr) with reviewable dossiers"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Sebastien Correaud", email = "sebastien.correaud@gmail.com" }
+]
+requires-python = ">=3.12"
+keywords = ["mcp", "model-context-protocol", "kyb", "sirene", "france"]
+dependencies = [
+    "httpx>=0.28",
+    "mcp[cli]>=2.1",
+    "psycopg[binary,pool]>=3.2",
+    "pydantic>=2.11",
+    "uvicorn>=0.34",
+]
+
+[project.scripts]
+kyb-mcp = "kyb_mcp.server:main"
+
+[project.urls]
+Repository = "https://github.com/iGitScor/kyb-mcp"
+
+[dependency-groups]
+dev = [
+    "anyio>=4.9",
+    "pyright>=1.1.400",
+    "pytest>=8.3",
+    "respx>=0.22",
+    "ruff>=0.11",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kyb_mcp"]
+
+[tool.vercel]
+entrypoint = "kyb_mcp.http:app"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ASYNC"]
+ignore = ["RUF012"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error::DeprecationWarning:kyb_mcp.*"]
