@@ -1,0 +1,12 @@
+.git
+.venv
+.vercel
+.pytest_cache
+.ruff_cache
+__pycache__
+tests
+docs
+.github
+compose.yaml
+*.md
+!README.md

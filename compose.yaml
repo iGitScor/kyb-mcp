@@ -1,0 +1,31 @@
+# Local stack: PostgreSQL 16 + the MCP server over Streamable HTTP on http://localhost:8000/mcp
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kyb
+      POSTGRES_PASSWORD: kyb
+      POSTGRES_DB: kyb
+    ports:
+      - "${KYB_PG_PORT:-5433}:5432"   # 5433 on the host: 5432 is often taken by a local Postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kyb -d kyb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mcp:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://kyb:kyb@db:5432/kyb
+      KYB_ALLOWED_HOSTS: localhost,127.0.0.1
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
