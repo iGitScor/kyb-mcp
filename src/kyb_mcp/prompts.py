@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 from typing import Annotated
 
+from mcp import MCPError
 from mcp.server.mcpserver import Message, UserMessage
 from mcp.types import (
+    INVALID_PARAMS,
     Completion,
     CompletionArgument,
     CompletionContext,
@@ -18,7 +20,7 @@ from mcp.types import (
 from pydantic import Field
 
 from kyb_mcp import core
-from kyb_mcp.api.client import normalize_siren
+from kyb_mcp.api.client import ApiError, NotFound, normalize_siren
 from kyb_mcp.core import Context, app_of, mcp
 
 REVIEW_CHECKLIST = """\
@@ -35,7 +37,14 @@ Answer in French. Be concise and factual; mark unknowns as such.
 
 
 async def _company_block(siren: str, ctx: Context) -> EmbeddedResource:
-    company = await app_of(ctx).api.get_company(siren)
+    # A prompt has no tool-style error result: anything raised becomes a JSON-RPC error and only
+    # an MCPError keeps its message on the wire. Turn the expected failures into one the user can read.
+    try:
+        company = await app_of(ctx).api.get_company(siren)
+    except (ValueError, NotFound) as exc:
+        raise MCPError(INVALID_PARAMS, f"{exc} (type the 9 digits without spaces, e.g. 944230770)") from exc
+    except ApiError as exc:
+        raise MCPError(INVALID_PARAMS, str(exc)) from exc
     return EmbeddedResource(
         resource=TextResourceContents(
             uri=f"company://{company.siren}",
@@ -60,9 +69,12 @@ async def compare_companies(
     ctx: Context,
 ) -> list[Message]:
     """Side-by-side comparison of several companies (size, age, activity, financial signal)."""
-    ids = [normalize_siren(s) for s in sirens.split(",") if s.strip()]
+    try:
+        ids = [normalize_siren(s) for s in sirens.split(",") if s.strip()]
+    except ValueError as exc:
+        raise MCPError(INVALID_PARAMS, str(exc)) from exc
     if not 2 <= len(ids) <= 5:
-        raise ValueError("Give between 2 and 5 SIRENs, comma-separated.")
+        raise MCPError(INVALID_PARAMS, "Give between 2 and 5 SIRENs, comma-separated.")
     messages: list[Message] = [UserMessage(await _company_block(s, ctx)) for s in ids]
     messages.append(
         UserMessage(

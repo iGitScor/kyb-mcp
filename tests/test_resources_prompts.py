@@ -62,3 +62,10 @@ async def test_completion_suggests_recent_sirens(client: Client) -> None:
         argument={"name": "siren", "value": "hero"},
     )
     assert by_name.completion.values == ["752791061"]
+
+
+async def test_prompt_errors_keep_their_message(client: Client) -> None:
+    with pytest.raises(MCPError, match="9 digits"):
+        await client.get_prompt("kyb_review", {"siren": "944"})
+    with pytest.raises(MCPError, match="No company"):
+        await client.get_prompt("kyb_review", {"siren": "000000000"})
